@@ -22,6 +22,9 @@ var gulp        = require('gulp'),
     spawn       = require('child_process').spawn,
     exec        = require('child_process').exec;
 
+
+/**************************************** CONSTANTS ****************************************/
+
 var PUBLIC_FOLDER_PATH      = path.join(__dirname, 'public'),
     FRONTEND_FOLDER_PATH    = path.join(__dirname, 'frontend'),
     BACKEND_FOLDER_PATH     = path.join(__dirname, 'backend'),
@@ -35,6 +38,8 @@ var PUBLIC_FOLDER_PATH      = path.join(__dirname, 'public'),
         VERBOSE: true,
         SESSION_SECRET: 'thisisnotasecretatall'
     };
+
+/************************************* HELPER FUNCTIONS ************************************/
 
 var helpers = {
     rebundle: function(bundler, done) {
@@ -71,6 +76,8 @@ var helpers = {
         };
     }
 };
+
+/**************************************** FRONTEND ****************************************/
 
 // Compiles the client js
 gulp.task('browserify', function(cb) {
@@ -138,6 +145,8 @@ gulp.task('images-delayed', helpers.delay(helpers.copyAssets('img')));
 gulp.task('clean', function() {
     clean.sync(PUBLIC_FOLDER_PATH);
 });
+
+/**************************************** BACKEND ****************************************/
 
 // The server process reference obj
 var serverProc = undefined;
@@ -216,17 +225,22 @@ gulp.task('stop-server', function() {
 });
 
 // The hollistic, atomic server task
-gulp.task('server', ['clean-server', 'stop-server', 'start-server']);
+gulp.task('server', ['stop-server', 'clean-server', 'start-server']);
+
+/**************************************** GENERIC ****************************************/
 
 // Watches changes to the client code
 gulp.task('watch', ['clean', 'less', 'html', 'images', 'server', 'watchify'], function() {
     // Watch frontend stuff
-    gulp.watch(path.join(FRONTEND_FOLDER_PATH, 'html', '**', '*'), ['html']);
-    gulp.watch(path.join(FRONTEND_FOLDER_PATH, 'less', '**', '*'), ['less']);
-    gulp.watch(path.join(FRONTEND_FOLDER_PATH, 'img', '**', '*'), ['images-delayed']);
+    gulp.watch(path.join(FRONTEND_FOLDER_PATH,  'html', '**', '*'), ['html']);
+    gulp.watch(path.join(FRONTEND_FOLDER_PATH,  'less', '**', '*'), ['less']);
+    gulp.watch(path.join(FRONTEND_FOLDER_PATH,  'img',  '**', '*'), ['images-delayed']);
     // Watch backend stuff
-    gulp.watch(path.join(BACKEND_FOLDER_PATH, '**', '*'), ['server']);
+    gulp.watch(path.join(BACKEND_FOLDER_PATH,   '**',   '*'), ['server']);
 });
 
+// Build all the assets
+gulp.task('build', ['less', 'html', 'images', 'browserify', 'build-server']);
+
 // Run all compilation tasks
-gulp.task('default', ['clean', 'less', 'html', 'images', 'browserify']);
+gulp.task('default', ['watch']);
