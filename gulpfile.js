@@ -25,17 +25,20 @@ var gulp        = require('gulp'),
 
 /**************************************** CONSTANTS ****************************************/
 
-var PUBLIC_FOLDER_PATH      = path.join(__dirname, 'public'),
-    FRONTEND_FOLDER_PATH    = path.join(__dirname, 'frontend'),
-    BACKEND_FOLDER_PATH     = path.join(__dirname, 'backend'),
+var PUBLIC_FOLDER_PATH          = path.join(__dirname, 'public'),
+    FRONTEND_FOLDER_PATH        = path.join(__dirname, 'frontend'),
+    FRONTEND_JS_FOLDER_PATH     = path.join(FRONTEND_FOLDER_PATH, 'js'),
+    FRONTEND_CSS_FOLDER_PATH    = path.join(FRONTEND_FOLDER_PATH, 'css'),
+    FRONTEND_IMG_FOLDER_PATH    = path.join(FRONTEND_FOLDER_PATH, 'img'),
+    BACKEND_FOLDER_PATH         = path.join(__dirname, 'backend'),
 
-    PROJECT_NAME            = __dirname.split(path.sep).pop(),
-    SERVER_EXECUTABLE       = 'server',
-    DB_CONN_STRING          = 'postgres://postgres:@localhost:5432/' + PROJECT_NAME,
-    SERVER_ENV              = {
-        PORT: 3000,
-        DB: DB_CONN_STRING,
-        VERBOSE: true,
+    PROJECT_NAME                = __dirname.split(path.sep).pop(),
+    SERVER_EXECUTABLE_NAME      = 'server',
+    DB_CONN_STRING              = 'postgres://postgres:@localhost:5432/' + PROJECT_NAME,
+    SERVER_ENV                  = {
+        PORT:           3000,
+        DB:             DB_CONN_STRING,
+        VERBOSE:        true,
         SESSION_SECRET: 'thisisnotasecretatall'
     };
 
@@ -153,7 +156,7 @@ var serverProc = undefined;
 
 // Remove the server executable
 gulp.task('clean-server', function(callback) {
-    var executablePath = path.join(BACKEND_FOLDER_PATH, SERVER_EXECUTABLE);
+    var executablePath = path.join(BACKEND_FOLDER_PATH, SERVER_EXECUTABLE_NAME);
     fs.unlinkSync(executablePath);
 });
 
@@ -162,7 +165,7 @@ gulp.task('compile-server', function(done) {
     var startTime = (new Date()).getTime(),
         timeDelta;
 
-    exec('go build -o ' + SERVER_EXECUTABLE, {
+    exec('go build -o ' + SERVER_EXECUTABLE_NAME, {
         cwd: BACKEND_FOLDER_PATH
     }, function(err, stdout, stderr) {
         if (err) {
@@ -179,7 +182,7 @@ gulp.task('compile-server', function(done) {
 gulp.task('start-server', ['compile-server'], function(done) {
     var startTime = (new Date()).getTime(),
         callbackTriggered = false,
-        executablePath = path.join(BACKEND_FOLDER_PATH, SERVER_EXECUTABLE),
+        executablePath = path.join(BACKEND_FOLDER_PATH, SERVER_EXECUTABLE_NAME),
         timeDelta = 0;
 
     if (fs.existsSync(executablePath)) {
