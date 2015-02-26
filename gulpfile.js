@@ -25,15 +25,29 @@ var gulp        = require('gulp'),
 
 /**************************************** CONSTANTS ****************************************/
 
-var PUBLIC_FOLDER_PATH          = path.join(__dirname, 'public'),
-    FRONTEND_FOLDER_PATH        = path.join(__dirname, 'frontend'),
-    FRONTEND_JS_FOLDER_PATH     = path.join(FRONTEND_FOLDER_PATH, 'js'),
-    FRONTEND_CSS_FOLDER_PATH    = path.join(FRONTEND_FOLDER_PATH, 'css'),
-    FRONTEND_IMG_FOLDER_PATH    = path.join(FRONTEND_FOLDER_PATH, 'img'),
-    BACKEND_FOLDER_PATH         = path.join(__dirname, 'backend'),
+var PUBLIC_FOLDER_NAME          = 'public',
+    FRONTEND_FOLDER_NAME        = 'frontend',
+    FRONTEND_JS_FOLDER_NAME     = 'js',
+    FRONTEND_LESS_FOLDER_NAME   = 'less',
+    FRONTEND_IMG_FOLDER_NAME    = 'img',
+    FRONTEND_VENDOR_FOLDER_NAME = 'vendor',
+    FRONTEND_HTML_FOLDER_NAME   = 'html',
+    BACKEND_FOLDER_NAME         = 'backend',
+
+    FRONTEND_JS_ENTRY_POINT     = 'main.js',
+    FRONTEND_LESS_ENTRY_POINT   = 'main.less',
+    BACKEND_EXECUTABLE_NAME      = 'server',
+
+    PUBLIC_FOLDER_PATH          = path.join(__dirname, PUBLIC_FOLDER_NAME),
+    FRONTEND_FOLDER_PATH        = path.join(__dirname, FRONTEND_FOLDER_NAME),
+    FRONTEND_JS_FOLDER_PATH     = path.join(FRONTEND_FOLDER_PATH, FRONTEND_JS_FOLDER_NAME),
+    FRONTEND_LESS_FOLDER_PATH   = path.join(FRONTEND_FOLDER_PATH, FRONTEND_LESS_FOLDER_NAME),
+    FRONTEND_IMG_FOLDER_PATH    = path.join(FRONTEND_FOLDER_PATH, FRONTEND_IMG_FOLDER_NAME),
+    FRONTEND_VENDOR_FOLDER_PATH = path.join(FRONTEND_FOLDER_PATH, FRONTEND_VENDOR_FOLDER_NAME),
+    FRONTEND_HTML_FOLDER_PATH   = path.join(FRONTEND_FOLDER_PATH, FRONTEND_HTML_FOLDER_NAME),
+    BACKEND_FOLDER_PATH         = path.join(__dirname, BACKEND_FOLDER_NAME),
 
     PROJECT_NAME                = __dirname.split(path.sep).pop(),
-    SERVER_EXECUTABLE_NAME      = 'server',
     DB_CONN_STRING              = 'postgres://postgres:@localhost:5432/' + PROJECT_NAME,
     SERVER_ENV                  = {
         PORT:           3000,
@@ -54,13 +68,12 @@ var helpers = {
                     gutil.log('Finished re-bundling client js after ' + (((new Date()).getTime() - time) / 1000) + ' s');
                     if (done) done();
                 } else {
-                    gutil.log('Failed to re-bundle client js:');
-                    console.log(err);
+                    gutil.log('Failed to re-bundle client js');
                     if (done) done(err);
                 }
             })
             .pipe(plumber())
-            .pipe(source(path.join(PUBLIC_FOLDER_PATH, 'main.js')))
+            .pipe(source(FRONTEND_JS_ENTRY_POINT))
             .pipe(buffer())
             .pipe(uglify())
             .pipe(gulp.dest(PUBLIC_FOLDER_PATH));
@@ -92,7 +105,7 @@ gulp.task('browserify', function(cb) {
     // JSX compilation middleware
     bundler.transform(reactify);
     // Add the entry point
-    bundler.add(path.join(FRONTEND_FOLDER_PATH, 'main.js'));
+    bundler.add(path.join(FRONTEND_JS_FOLDER_PATH, FRONTEND_JS_ENTRY_POINT));
     // Perform initial rebundle
     return helpers.rebundle(bundler, cb);
 });
@@ -114,14 +127,14 @@ gulp.task('watchify', function(cb) {
         helpers.rebundle(bundler);
     });
     // Add the entry point
-    bundler.add(path.join(FRONTEND_FOLDER_PATH, 'js', 'main.js'));
+    bundler.add(path.join(FRONTEND_JS_FOLDER_PATH, FRONTEND_JS_ENTRY_POINT));
     // Perform initial rebundle
     return helpers.rebundle(bundler, cb);
 });
 
 // Compiles the client less
 gulp.task('less', function() {
-    gulp.src(path.join(FRONTEND_FOLDER_PATH, 'less', 'main.less'))
+    gulp.src(path.join(FRONTEND_LESS_FOLDER_PATH, FRONTEND_LESS_ENTRY_POINT))
         .pipe(plumber())
         .pipe(sourcemaps.init())
         .pipe(less())
@@ -131,18 +144,22 @@ gulp.task('less', function() {
 
 // Condenses the pages
 gulp.task('html', function() {
-    gulp.src(path.join(FRONTEND_FOLDER_PATH, 'html', '**', '*.html'))
+    gulp.src(path.join(FRONTEND_HTML_FOLDER_PATH, '**', '*'))
         .pipe(plumber())
         .pipe(minify({
             empty: true,
             spare: true
         }))
-        .pipe(gulp.dest(PUBLIC_FOLDER_PATH, 'html'));
+        .pipe(gulp.dest(path.join(PUBLIC_FOLDER_PATH, FRONTEND_HTML_FOLDER_NAME)));
 });
 
 // Moves images
-gulp.task('images', helpers.copyAssets('img'));
-gulp.task('images-delayed', helpers.delay(helpers.copyAssets('img')));
+gulp.task('images', helpers.copyAssets(FRONTEND_IMG_FOLDER_NAME));
+gulp.task('images-delayed', helpers.delay(helpers.copyAssets(FRONTEND_IMG_FOLDER_NAME)));
+
+// Moves vendor files
+gulp.task('vendor', helpers.copyAssets(FRONTEND_VENDOR_FOLDER_NAME));
+gulp.task('vendor-delayed', helpers.delay(helpers.copyAssets(FRONTEND_VENDOR_FOLDER_NAME)));
 
 // Clears all compiled client code
 gulp.task('clean', function() {
@@ -156,7 +173,7 @@ var serverProc = undefined;
 
 // Remove the server executable
 gulp.task('clean-server', function(callback) {
-    var executablePath = path.join(BACKEND_FOLDER_PATH, SERVER_EXECUTABLE_NAME);
+    var executablePath = path.join(BACKEND_FOLDER_PATH, BACKEND_EXECUTABLE_NAME);
     fs.unlinkSync(executablePath);
 });
 
@@ -165,7 +182,7 @@ gulp.task('compile-server', function(done) {
     var startTime = (new Date()).getTime(),
         timeDelta;
 
-    exec('go build -o ' + SERVER_EXECUTABLE_NAME, {
+    exec('go build -o ' + BACKEND_EXECUTABLE_NAME, {
         cwd: BACKEND_FOLDER_PATH
     }, function(err, stdout, stderr) {
         if (err) {
@@ -182,7 +199,7 @@ gulp.task('compile-server', function(done) {
 gulp.task('start-server', ['compile-server'], function(done) {
     var startTime = (new Date()).getTime(),
         callbackTriggered = false,
-        executablePath = path.join(BACKEND_FOLDER_PATH, SERVER_EXECUTABLE_NAME),
+        executablePath = path.join(BACKEND_FOLDER_PATH, BACKEND_EXECUTABLE_NAME),
         timeDelta = 0;
 
     if (fs.existsSync(executablePath)) {
@@ -233,17 +250,18 @@ gulp.task('server', ['stop-server', 'clean-server', 'start-server']);
 /**************************************** GENERIC ****************************************/
 
 // Watches changes to the client code
-gulp.task('watch', ['clean', 'less', 'html', 'images', 'server', 'watchify'], function() {
+gulp.task('watch', ['clean', 'less', 'html', 'images', 'vendor', 'server', 'watchify'], function() {
     // Watch frontend stuff
-    gulp.watch(path.join(FRONTEND_FOLDER_PATH,  'html', '**', '*'), ['html']);
-    gulp.watch(path.join(FRONTEND_FOLDER_PATH,  'less', '**', '*'), ['less']);
-    gulp.watch(path.join(FRONTEND_FOLDER_PATH,  'img',  '**', '*'), ['images-delayed']);
+    gulp.watch(path.join(FRONTEND_HTML_FOLDER_PATH,     '**', '*'), ['html']);
+    gulp.watch(path.join(FRONTEND_LESS_FOLDER_PATH,     '**', '*'), ['less']);
+    gulp.watch(path.join(FRONTEND_IMG_FOLDER_PATH,      '**', '*'), ['images-delayed']);
+    gulp.watch(path.join(FRONTEND_VENDOR_FOLDER_PATH,   '**', '*'), ['vendor-delayed']);
     // Watch backend stuff
-    gulp.watch(path.join(BACKEND_FOLDER_PATH,   '**',   '*'), ['server']);
+    gulp.watch(path.join(BACKEND_FOLDER_PATH,           '**', '*'), ['server']);
 });
 
 // Build all the assets
-gulp.task('build', ['less', 'html', 'images', 'browserify', 'build-server']);
+gulp.task('build', ['less', 'html', 'images', 'vendor', 'browserify', 'build-server']);
 
 // Run all compilation tasks
 gulp.task('default', ['watch']);
