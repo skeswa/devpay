@@ -36,7 +36,7 @@ var PUBLIC_FOLDER_NAME          = 'public',
 
     FRONTEND_JS_ENTRY_POINT     = 'main.js',
     FRONTEND_LESS_ENTRY_POINT   = 'main.less',
-    BACKEND_EXECUTABLE_NAME      = 'server',
+    BACKEND_EXECUTABLE_NAME     = 'server',
 
     PUBLIC_FOLDER_PATH          = path.join(__dirname, PUBLIC_FOLDER_NAME),
     FRONTEND_FOLDER_PATH        = path.join(__dirname, FRONTEND_FOLDER_NAME),
@@ -172,13 +172,25 @@ gulp.task('clean', function() {
 var serverProc = undefined;
 
 // Remove the server executable
-gulp.task('clean-server', function(callback) {
+gulp.task('clean-server', ['stop-server'], function(done) {
     var executablePath = path.join(BACKEND_FOLDER_PATH, BACKEND_EXECUTABLE_NAME);
-    fs.unlinkSync(executablePath);
+    fs.exists(executablePath, function(exists) {
+        if (exists) {
+            fs.unlink(executablePath, function(err) {
+                if (err) {
+                    done('Could not delete the server executable');
+                } else {
+                    done();
+                }
+            });
+        } else {
+            done();
+        }
+    });
 });
 
 // Uses the golang toolchain to compile server sourcecode
-gulp.task('compile-server', function(done) {
+gulp.task('compile-server', ['clean-server'], function(done) {
     var startTime = (new Date()).getTime(),
         timeDelta;
 
@@ -214,6 +226,9 @@ gulp.task('start-server', ['compile-server'], function(done) {
             process.stdout.write(data);
         });
         serverProc.on('close', function(code) {
+            // Signal that the server finished running
+            serverProc = undefined;
+            // Report the server exit
             timeDelta = (new Date()).getTime() - startTime;
             gutil.log('Server exited with code \'' + code + '\' after ' + (timeDelta / 1000) + ' s');
             if (!callbackTriggered) {
@@ -238,30 +253,37 @@ gulp.task('start-server', ['compile-server'], function(done) {
 });
 
 // Halts the server process if it exists
-gulp.task('stop-server', function() {
+gulp.task('stop-server', function(done) {
     if (serverProc) {
         serverProc.kill();
+        // Wait until the server process is killed
+        var interval = setInterval(function() {
+            if (!serverProc) {
+                clearInterval(interval);
+                done();
+            }
+        }, 50);
+    } else {
+        done();
     }
 });
 
+gulp.task('watch-server', ['start-server'], function(done) {
+    gulp.watch(path.join(BACKEND_FOLDER_PATH, '**', '*'), ['start-server']);
+});
+
 // The hollistic, atomic server task
-gulp.task('server', ['stop-server', 'clean-server', 'start-server']);
+gulp.task('server', ['start-server']);
 
 /**************************************** GENERIC ****************************************/
 
 // Watches changes to the client code
-gulp.task('watch', ['clean', 'less', 'html', 'images', 'vendor', 'server', 'watchify'], function() {
-    // Watch frontend stuff
+gulp.task('watch', ['clean', 'less', 'html', 'images', 'vendor', 'watch-server', 'watchify'], function() {
     gulp.watch(path.join(FRONTEND_HTML_FOLDER_PATH,     '**', '*'), ['html']);
     gulp.watch(path.join(FRONTEND_LESS_FOLDER_PATH,     '**', '*'), ['less']);
     gulp.watch(path.join(FRONTEND_IMG_FOLDER_PATH,      '**', '*'), ['images-delayed']);
     gulp.watch(path.join(FRONTEND_VENDOR_FOLDER_PATH,   '**', '*'), ['vendor-delayed']);
-    // Watch backend stuff
-    gulp.watch(path.join(BACKEND_FOLDER_PATH,           '**', '*'), ['server']);
 });
-
-// Build all the assets
-gulp.task('build', ['less', 'html', 'images', 'vendor', 'browserify', 'build-server']);
 
 // Run all compilation tasks
 gulp.task('default', ['watch']);

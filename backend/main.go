@@ -1,5 +1,8 @@
 package main
 
+import "github.com/go-martini/martini"
+
 func main() {
-	return
+	m := martini.Classic()
+	m.Run()
 }
