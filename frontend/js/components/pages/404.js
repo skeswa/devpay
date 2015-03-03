@@ -1,14 +1,14 @@
 import React from 'react';
 import {Navigation, Link} from 'react-router';
 
-const Home = React.createClass({
+const NotFound = React.createClass({
     render: () => {
         return (
             <div>
-                <h1>home</h1>
+                <h1>404</h1>
             </div>
         );
     }
 });
 
-export default Home;
+export default NotFound;

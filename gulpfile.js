@@ -10,7 +10,7 @@ var gulp        = require('gulp'),
     browserify  = require('browserify'),
     source      = require('vinyl-source-stream'),
     watchify    = require('watchify'),
-    reactify    = require('reactify'),
+    to5ify      = require('6to5ify'),
     uglify      = require('gulp-uglify'),
     buffer      = require('vinyl-buffer')
     // LESS-related imports
@@ -69,13 +69,14 @@ var helpers = {
                     if (done) done();
                 } else {
                     gutil.log('Failed to re-bundle client js');
+                    console.log(err);
                     if (done) done(err);
                 }
             })
             .pipe(plumber())
             .pipe(source(FRONTEND_JS_ENTRY_POINT))
             .pipe(buffer())
-            .pipe(uglify())
+            // .pipe(uglify()) // Commented for sanity
             .pipe(gulp.dest(PUBLIC_FOLDER_PATH));
     },
     delay: function(callback) {
@@ -102,8 +103,8 @@ gulp.task('browserify', function(cb) {
         packageCache: {},
         fullPaths: true
     });
-    // JSX compilation middleware
-    bundler.transform(reactify);
+    // ES6 Compatibility
+    bundler.transform(to5ify);
     // Add the entry point
     bundler.add(path.join(FRONTEND_JS_FOLDER_PATH, FRONTEND_JS_ENTRY_POINT));
     // Perform initial rebundle
@@ -120,8 +121,8 @@ gulp.task('watchify', function(cb) {
     });
     // Pass the browserify bundler to watchify
     bundler = watchify(bundler);
-    // JSX compilation middleware
-    bundler.transform(reactify);
+    // ES6 Compatibility
+    bundler.transform(to5ify);
     // Bundlize on updates
     bundler.on('update', function() {
         helpers.rebundle(bundler);
@@ -278,12 +279,13 @@ gulp.task('server', ['start-server']);
 /**************************************** GENERIC ****************************************/
 
 // Watches changes to the client code
-gulp.task('watch', ['clean', 'less', 'html', 'images', 'vendor', 'watch-server', 'watchify'], function() {
+gulp.task('watch', ['clean', 'less', 'html', 'images', 'vendor', 'start-server'], function() {
     gulp.watch(path.join(FRONTEND_HTML_FOLDER_PATH,     '**', '*'), ['html']);
     gulp.watch(path.join(FRONTEND_LESS_FOLDER_PATH,     '**', '*'), ['less']);
     gulp.watch(path.join(FRONTEND_IMG_FOLDER_PATH,      '**', '*'), ['images-delayed']);
     gulp.watch(path.join(FRONTEND_VENDOR_FOLDER_PATH,   '**', '*'), ['vendor-delayed']);
+    gulp.watch(path.join(BACKEND_FOLDER_PATH,           '**', '*'), ['start-server']);
 });
 
 // Run all compilation tasks
-gulp.task('default', ['watch']);
+gulp.task('default', ['watch', 'watchify']);
