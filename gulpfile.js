@@ -6,11 +6,12 @@ var gulp        = require('gulp'),
     path        = require('path'),
     clean       = require('rimraf'),
     plumber     = require('gulp-plumber'),
+    replace     = require('gulp-replace'),
     // Browserify-related imports
     browserify  = require('browserify'),
     source      = require('vinyl-source-stream'),
     watchify    = require('watchify'),
-    to5ify      = require('6to5ify'),
+    babelify    = require('babelify'),
     uglify      = require('gulp-uglify'),
     buffer      = require('vinyl-buffer')
     // LESS-related imports
@@ -20,7 +21,9 @@ var gulp        = require('gulp'),
     minify      = require('gulp-minify-html'),
     // Process-related imports
     spawn       = require('child_process').spawn,
-    exec        = require('child_process').exec;
+    exec        = require('child_process').exec,
+    // Dev utility imports
+    livereload  = require('gulp-livereload');
 
 
 /**************************************** CONSTANTS ****************************************/
@@ -104,7 +107,7 @@ gulp.task('browserify', function(cb) {
         fullPaths: true
     });
     // ES6 Compatibility
-    bundler.transform(to5ify);
+    bundler.transform(babelify);
     // Add the entry point
     bundler.add(path.join(FRONTEND_JS_FOLDER_PATH, FRONTEND_JS_ENTRY_POINT));
     // Perform initial rebundle
@@ -122,7 +125,7 @@ gulp.task('watchify', function(cb) {
     // Pass the browserify bundler to watchify
     bundler = watchify(bundler);
     // ES6 Compatibility
-    bundler.transform(to5ify);
+    bundler.transform(babelify);
     // Bundlize on updates
     bundler.on('update', function() {
         helpers.rebundle(bundler);
@@ -142,6 +145,15 @@ gulp.task('less', function() {
         .pipe(sourcemaps.write())
         .pipe(gulp.dest(PUBLIC_FOLDER_PATH));
 });
+gulp.task('less-dev', function() {
+    gulp.src(path.join(FRONTEND_LESS_FOLDER_PATH, FRONTEND_LESS_ENTRY_POINT))
+        .pipe(plumber())
+        .pipe(sourcemaps.init())
+        .pipe(less())
+        .pipe(sourcemaps.write())
+        .pipe(gulp.dest(PUBLIC_FOLDER_PATH))
+        .pipe(livereload());
+});
 
 // Condenses the pages
 gulp.task('html', function() {
@@ -152,6 +164,17 @@ gulp.task('html', function() {
             spare: true
         }))
         .pipe(gulp.dest(path.join(PUBLIC_FOLDER_PATH, FRONTEND_HTML_FOLDER_NAME)));
+});
+gulp.task('html-dev', function() {
+    gulp.src(path.join(FRONTEND_HTML_FOLDER_PATH, '**', '*'))
+        .pipe(plumber())
+        .pipe(minify({
+            empty: true,
+            spare: true
+        }))
+        .pipe(replace('</body>', '<script src="http://localhost:35729/livereload.js"></script></body>'))
+        .pipe(gulp.dest(path.join(PUBLIC_FOLDER_PATH, FRONTEND_HTML_FOLDER_NAME)))
+        .pipe(livereload());
 });
 
 // Moves images
@@ -279,12 +302,14 @@ gulp.task('server', ['start-server']);
 /**************************************** GENERIC ****************************************/
 
 // Watches changes to the client code
-gulp.task('watch', ['clean', 'less', 'html', 'images', 'vendor', 'start-server'], function() {
-    gulp.watch(path.join(FRONTEND_HTML_FOLDER_PATH,     '**', '*'), ['html']);
-    gulp.watch(path.join(FRONTEND_LESS_FOLDER_PATH,     '**', '*'), ['less']);
+gulp.task('watch', ['clean', 'less-dev', 'html-dev', 'images', 'vendor', 'start-server'], function() {
+    gulp.watch(path.join(FRONTEND_HTML_FOLDER_PATH,     '**', '*'), ['html-dev']);
+    gulp.watch(path.join(FRONTEND_LESS_FOLDER_PATH,     '**', '*'), ['less-dev']);
     gulp.watch(path.join(FRONTEND_IMG_FOLDER_PATH,      '**', '*'), ['images-delayed']);
     gulp.watch(path.join(FRONTEND_VENDOR_FOLDER_PATH,   '**', '*'), ['vendor-delayed']);
     gulp.watch(path.join(BACKEND_FOLDER_PATH,           '**', '*'), ['start-server']);
+    // Start the livereload server
+    livereload.listen();
 });
 
 // Run all compilation tasks

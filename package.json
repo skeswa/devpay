@@ -10,13 +10,15 @@
     "reflux": "^0.2.5"
   },
   "devDependencies": {
-    "6to5ify": "^4.1.1",
+    "babelify": "^5.0.3",
     "browserify": "^9.0.3",
     "gulp": "^3.8.11",
     "gulp-git": "^1.0.0",
     "gulp-less": "^3.0.1",
+    "gulp-livereload": "^3.8.0",
     "gulp-minify-html": "^1.0.0",
     "gulp-plumber": "^0.6.6",
+    "gulp-replace": "^0.5.3",
     "gulp-sourcemaps": "^1.4.0",
     "gulp-uglify": "^1.1.0",
     "gulp-util": "^3.0.4",
