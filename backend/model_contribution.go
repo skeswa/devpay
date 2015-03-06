@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/lib/pq"
 	"time"
 )
 
@@ -33,10 +34,10 @@ type Contribution struct {
 	ContributorId int64 // The id of the contributor; Foreign key for User (belongs to)
 	CampaignId    int64 // The id of the campaign; Foreign key for the Campaign (belongs to)
 
-	Active    bool      // True if this entity has not been soft deleted
-	CreatedAt time.Time // The time when this contribution was created
-	UpdatedAt time.Time // The time when this contribution was last updated
-	DeletedAt time.Time // The time when this contribution was soft deleted
+	Active    bool        // True if this entity has not been soft deleted
+	CreatedAt time.Time   // The time when this contribution was created
+	UpdatedAt time.Time   // The time when this contribution was last updated
+	DeletedAt pq.NullTime // The time when this user was soft deleted
 }
 
 // Creates the Contribution table if it doesn't already exist

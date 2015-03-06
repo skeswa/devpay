@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/lib/pq"
 	"time"
 )
 
@@ -32,10 +33,10 @@ type ClaimVote struct {
 	VoterId sql.NullInt64 // The id of the voter; Foreign key for User (belongs to)
 	ClaimId sql.NullInt64 // The id of the claim; Foreign key for Claim (belongs to)
 
-	Active    bool      // True if this entity has not been soft deleted
-	CreatedAt time.Time // The time when this claim evidence was created
-	UpdatedAt time.Time // The time when this claim evidence was last updated
-	DeletedAt time.Time // The time when this claim evidence was soft deleted
+	Active    bool        // True if this entity has not been soft deleted
+	CreatedAt time.Time   // The time when this claim evidence was created
+	UpdatedAt time.Time   // The time when this claim evidence was last updated
+	DeletedAt pq.NullTime // The time when this user was soft deleted
 }
 
 // Creates the ClaimVote table if it doesn't already exist

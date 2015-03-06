@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/lib/pq"
 	"time"
 )
 
@@ -34,10 +35,10 @@ type Claim struct {
 	Evidence   []ClaimEvidence // The evidence of the claim; One-To-Many relationship (has many)
 	Votes      []ClaimVote     // The votes concerning this claim; One-To-Many relationship (has many)
 
-	Active    bool      // True if this entity has not been soft deleted
-	CreatedAt time.Time // The time when this claim was created
-	UpdatedAt time.Time // The time when this claim was last updated
-	DeletedAt time.Time // The time when this claim was soft deleted
+	Active    bool        // True if this entity has not been soft deleted
+	CreatedAt time.Time   // The time when this claim was created
+	UpdatedAt time.Time   // The time when this claim was last updated
+	DeletedAt pq.NullTime // The time when this user was soft deleted
 }
 
 // Creates the Claim table if it doesn't already exist

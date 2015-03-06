@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"github.com/lib/pq"
+	"strings"
 	"time"
 )
 
@@ -28,10 +30,17 @@ const (
 	SQL_CREATE_NEW_USER = `
 		INSERT INTO ` + TABLE_NAME_USER + `
 		(first_name, last_name, email, hashed_password, stripe_id, picture_url, active, created_at, updated_at) VALUES
-		(?, ?, ?, ?, ?, ?, ?, ?, ?);
+		($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id;
+	`
+	SQL_SELECT_USER_BY_ID = `
+		SELECT * FROM ` + TABLE_NAME_USER + ` WHERE (id = $1);
 	`
 
 	ERR_USER_CREATION_FAILED = "Could not create new user: "
+)
+
+var (
+	FULL_ERR_USER_CREATION_FAILED_EMAIL_TAKEN = errors.New(ERR_USER_CREATION_FAILED + "email already taken")
 )
 
 // The User model represents people who have accounts
@@ -44,16 +53,16 @@ type User struct {
 	StripeId       string // The id of the user with Stripe's API
 	PictureUrl     string // The URL to user's picture
 
-	Active    bool      // True if this entity has not been soft deleted
-	CreatedAt time.Time // The time when this user was created
-	UpdatedAt time.Time // The time when this user was last updated
-	DeletedAt time.Time // The time when this user was soft deleted
+	Active    bool        // True if this entity has not been soft deleted
+	CreatedAt time.Time   // The time when this user was created
+	UpdatedAt time.Time   // The time when this user was last updated
+	DeletedAt pq.NullTime // The time when this user was soft deleted
 }
 
 // Fills user with data from a db row
 func (u User) populateFromRow(row *sql.Row) error {
 	// Scan for member fields
-	return row.Scan(&u.Id, &u.FirstName, &u.LastName, &u.Email, &u.HashedPassword, &u.StripeId, &u.PictureUrl, &u.Active, &u.CreatedAt, &u.UpdatedAt)
+	return row.Scan(&u.Id, &u.FirstName, &u.LastName, &u.Email, &u.HashedPassword, &u.StripeId, &u.PictureUrl, &u.Active, &u.CreatedAt, &u.UpdatedAt, &u.DeletedAt)
 }
 
 // Creates the User table if it doesn't already exist
@@ -62,7 +71,20 @@ func CreateUserTable(db *sql.DB) error {
 	return err
 }
 
-// Creates a new User in the database
+// Gets a User from the database by id
+func GetUser(
+	db *sql.DB,
+	id int64,
+) (*User, error) {
+	var newUser User
+	if err := newUser.populateFromRow(db.QueryRow(SQL_SELECT_USER_BY_ID, id)); err != nil {
+		return nil, errors.New(ERR_USER_CREATION_FAILED + err.Error())
+	} else {
+		return &newUser, nil
+	}
+}
+
+// Creates a new User in the database; returns the id of the new user
 func CreateNewUser(
 	db *sql.DB, // The database
 	FirstName string, // The first name of the user
@@ -71,12 +93,21 @@ func CreateNewUser(
 	HashedPassword string, // The bcrypted password of the user
 	StripeId string, // The id of the user with Stripe's API
 	PictureUrl string, // The URL to user's picture
-) (*User, error) {
-	var newUser User
-	newRow := db.QueryRow(SQL_CREATE_NEW_USER, FirstName, LastName, Email, HashedPassword, StripeId, PictureUrl, true, time.Now(), time.Now(), time.Now())
-	if err := newUser.populateFromRow(newRow); err != nil {
-		return nil, errors.New(ERR_USER_CREATION_FAILED + err.Error())
+) (int64, error) {
+	var (
+		id  int64
+		now = time.Now()
+	)
+
+	err := db.QueryRow(SQL_CREATE_NEW_USER, FirstName, LastName, Email, HashedPassword, StripeId, PictureUrl, true, now, now).Scan(&id)
+	if err != nil {
+		// Check if the issue is email related
+		if strings.Contains(err.Error(), "violates unique constraint \"users_email_key\"") {
+			return -1, FULL_ERR_USER_CREATION_FAILED_EMAIL_TAKEN
+		} else {
+			return -1, errors.New(ERR_USER_CREATION_FAILED + err.Error())
+		}
 	} else {
-		return &newUser, nil
+		return id, nil
 	}
 }

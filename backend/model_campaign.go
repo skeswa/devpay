@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/lib/pq"
 	"time"
 )
 
@@ -48,10 +49,10 @@ type Campaign struct {
 	Contributions []Contribution // All the contributions to this campaign; One-To-Many relationship (has many)
 	Claims        []Claim        // All the claims for this campaign; One-To-Many relationship (has many)
 
-	Active    bool      // True if this entity has not been soft deleted
-	CreatedAt time.Time // The time when this campaign was created
-	UpdatedAt time.Time // The time when this campaign was last updated
-	DeletedAt time.Time // The time when this campaign was soft deleted
+	Active    bool        // True if this entity has not been soft deleted
+	CreatedAt time.Time   // The time when this campaign was created
+	UpdatedAt time.Time   // The time when this campaign was last updated
+	DeletedAt pq.NullTime // The time when this user was soft deleted
 }
 
 // Creates the Campaign table if it doesn't already exist
