@@ -13,14 +13,14 @@ import (
 
 const (
 	// General constants
-	ENV_VAR_JWT_SECRET = "JWT_SECRET"         // Name of JWT secret environment variable
-	SESSION_LENGTH     = (time.Hour * 24 * 7) // How long sessions last (right now its one week)
+	SESSION_LENGTH = (time.Hour * 24 * 7) // How long sessions last (right now its one week)
 
 	// JWT claim keys for Session
 	JWT_CLAIM_USER_ID         = "userId"      // JWT claim key for id of currently authed user
 	JWT_CLAIM_USER_FIRST_NAME = "firstName"   // JWT claim key for first name of currently authed user
 	JWT_CLAIM_USER_LAST_NAME  = "lastName"    // JWT claim key for last name of currently authed user
 	JWT_CLAIM_USER_EMAIL      = "email"       // JWT claim key for email of currently authed user
+	JWT_CLAIM_USER_PIC_URL    = "pictureUrl"  // JWT claim key for picture url of currently authed user
 	JWT_CLAIM_EXPIRATION      = "expiration"  // JWT claim key for expiration date in secs since epoch
 	JWT_CLAIM_TIME_CREATED    = "timeCreated" // JWT claim key for time created in secs since epoch
 
@@ -48,6 +48,8 @@ type Session struct {
 	lastName string
 	// Currently authed user's email
 	email string
+	// Currently authed user's picture url
+	pictureUrl string
 	// Time when session expires
 	expiration int64
 	// Time when the session was created
@@ -81,6 +83,7 @@ func MarshalSession(sesh Session, token *jwt.Token) {
 	token.Claims[JWT_CLAIM_USER_FIRST_NAME] = sesh.firstName
 	token.Claims[JWT_CLAIM_USER_LAST_NAME] = sesh.lastName
 	token.Claims[JWT_CLAIM_USER_EMAIL] = sesh.email
+	token.Claims[JWT_CLAIM_USER_PIC_URL] = sesh.pictureUrl
 	token.Claims[JWT_CLAIM_EXPIRATION] = strconv.FormatInt(sesh.expiration, 64)
 	token.Claims[JWT_CLAIM_TIME_CREATED] = strconv.FormatInt(sesh.timeCreated, 64)
 }
@@ -120,6 +123,10 @@ func UnmarshalSession(token *jwt.Token) (*Session, error) {
 	if !ok {
 		return nil, errors.New(ERR_JWT_INVALID_CLAIMS)
 	}
+	pictureUrl, ok := token.Claims[JWT_CLAIM_USER_PIC_URL].(string)
+	if !ok {
+		return nil, errors.New(ERR_JWT_INVALID_CLAIMS)
+	}
 
 	// Perform checks for both the numbers
 	userId, err := strconv.ParseUint(userIdStr, 10, 64)
@@ -138,6 +145,7 @@ func UnmarshalSession(token *jwt.Token) (*Session, error) {
 		firstName:   firstName,
 		lastName:    lastName,
 		email:       email,
+		pictureUrl:  pictureUrl,
 		expiration:  expiration,
 		timeCreated: timeCreated,
 	}, nil
@@ -148,23 +156,27 @@ func UnmarshalSession(token *jwt.Token) (*Session, error) {
 // Martini middleware that provides the session to martini handlers
 func Sessionize(res http.ResponseWriter, req *http.Request, c martini.Context) {
 	// First check if the current path is whitelisted
-
-	token, err := jwt.ParseFromRequest(req, lookupJWTKey)
-	// Check out whether we're fine
-	if err != nil || !token.Valid {
-		http.Error(res, "Authorization token was invalid", http.StatusUnauthorized)
-	} else {
-		// Embed the token data in the context
-		sesh, err := UnmarshalSession(token)
-		if err != nil {
-			// Could not marshal the session, send back the 401
-			http.Error(res, err.Error(), http.StatusUnauthorized)
+	if (req.URL.Path != API_ENDPOINT_REGISTER) && (req.URL.Path != API_ENDPOINT_AUTHENTICATE) {
+		token, err := jwt.ParseFromRequest(req, lookupJWTKey)
+		// Check out whether we're fine
+		if err != nil || !token.Valid {
+			http.Error(res, "Authorization token was invalid", http.StatusUnauthorized)
 		} else {
-			// Bind the session to the martini context
-			c.Map(sesh)
-			// Move on
-			c.Next()
+			// Embed the token data in the context
+			sesh, err := UnmarshalSession(token)
+			if err != nil {
+				// Could not marshal the session, send back the 401
+				http.Error(res, err.Error(), http.StatusUnauthorized)
+			} else {
+				// Bind the session to the martini context
+				c.Map(sesh)
+				// Move on
+				c.Next()
+			}
 		}
+	} else {
+		// This path is whitelisted
+		c.Next()
 	}
 }
 

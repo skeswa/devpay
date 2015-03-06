@@ -1,0 +1,6 @@
+{
+    "DB_NAME":      "equitizedev",
+    "DB_USER":      "postgres",
+    "JWT_SECRET":   "this is not much of a secret, is it",
+    "PORT":         3000
+}

@@ -36,11 +36,13 @@ var PUBLIC_FOLDER_NAME          = 'public',
     FRONTEND_VENDOR_FOLDER_NAME = 'vendor',
     FRONTEND_HTML_FOLDER_NAME   = 'html',
     BACKEND_FOLDER_NAME         = 'backend',
+    ENV_FOLDER_NAME             = 'env',
 
     FRONTEND_JS_ENTRY_POINT     = 'main.js',
     FRONTEND_LESS_ENTRY_POINT   = 'main.less',
     BACKEND_EXECUTABLE_NAME     = 'server',
 
+    ENV_FOLDER_PATH             = path.join(__dirname, ENV_FOLDER_NAME),
     PUBLIC_FOLDER_PATH          = path.join(__dirname, PUBLIC_FOLDER_NAME),
     FRONTEND_FOLDER_PATH        = path.join(__dirname, FRONTEND_FOLDER_NAME),
     FRONTEND_JS_FOLDER_PATH     = path.join(FRONTEND_FOLDER_PATH, FRONTEND_JS_FOLDER_NAME),
@@ -233,14 +235,15 @@ gulp.task('compile-server', ['clean-server'], function(done) {
 
 // Runs the server executable
 gulp.task('start-server', ['compile-server'], function(done) {
-    var startTime = (new Date()).getTime(),
-        callbackTriggered = false,
-        executablePath = path.join(BACKEND_FOLDER_PATH, BACKEND_EXECUTABLE_NAME),
-        timeDelta = 0;
+    var startTime           = (new Date()).getTime(),
+        environment         = require(path.join(ENV_FOLDER_PATH, 'dev.json')),
+        callbackTriggered   = false,
+        executablePath      = path.join(BACKEND_FOLDER_PATH, BACKEND_EXECUTABLE_NAME),
+        timeDelta           = 0;
 
     if (fs.existsSync(executablePath)) {
         serverProc = spawn(executablePath, [], {
-            env: SERVER_ENV
+            env: environment
         });
         // Setup listeners
         serverProc.stdout.on('data', function(data) {
