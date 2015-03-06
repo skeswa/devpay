@@ -17,7 +17,19 @@ func main() {
 		log.Fatalln(ERR_COULDNT_START + err.Error())
 	}
 	// Setup the database
-	_, err = SetupDatabase(env)
+	db, err := SetupDatabase(env)
+	if err != nil {
+		log.Fatalln(ERR_COULDNT_START + err.Error())
+	}
+
+	// DELETEME
+	_, err = CreateNewUser(db,
+		"Sandile",
+		"Keswa",
+		"me@sandile.io",
+		"lolbro",
+		"stripe",
+		"http://google.com/favicon.ico")
 	if err != nil {
 		log.Fatalln(ERR_COULDNT_START + err.Error())
 	}
