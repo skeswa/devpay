@@ -18,6 +18,8 @@ const (
 func SetupRoutes(m *martini.ClassicMartini, db *sql.DB, env *Environment) {
 	// Routes that serve site assets
 	SetupAssetRoutes(m, db, env)
+	// Routes that handle authentication
+	SetupAuthRoutes(m, db, env)
 	// Routes to do with users
 	SetupUserRoutes(m, db, env)
 }

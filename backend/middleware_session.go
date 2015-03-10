@@ -179,6 +179,7 @@ func NewSessionToken(
 
 // Martini middleware that provides the session to martini handlers
 func Sessionize(res http.ResponseWriter, req *http.Request, c martini.Context) {
+	log.Println("got here 1")
 	// First check if the current path is not blacklisted
 	if strings.Index(req.URL.Path, API_PREFIX) == 0 &&
 		(req.URL.Path != API_AUTHENTICATE) &&

@@ -8,6 +8,7 @@ import (
 const (
 	ERRCODE_EMAIL_TAKEN         = "EMAIL_TAKEN"
 	ERRCODE_INTERNAL_ERROR      = "INTERNAL_ERROR"
+	ERRCODE_ENDPOINT_NOT_FOUND  = "ENDPOINT_NOT_FOUND"
 	ERRCODE_INVALID_JSON        = "INVALID_JSON"
 	ERRCODE_INVALID_FIELD       = "INVALID_FIELD"
 	ERRCODE_INVALID_AUTH_TOKEN  = "INVALID_AUTH_TOKEN"
@@ -15,6 +16,7 @@ const (
 	ERRCODE_ENTITY_NOT_FOUND    = "ENTITY_NOT_FOUND"
 
 	ERR_INTERNAL_SERVER_ERROR = "There was an internal issue"
+	ERR_ENDPOINT_NOT_FOUND    = "Endpoint does not exist"
 	ERR_INVALID_AUTH_TOKEN    = "Authorization token is invalid"
 	ERR_USER_CREATION_FAILED  = "Could not create new user: "
 	ERR_INVALID_CREDENTIALS   = "Given credentials were invalid"
@@ -32,6 +34,7 @@ const (
 
 var (
 	PUBERR_INTERNAL_SERVER_ERROR            = NewPublicError(http.StatusInternalServerError, ERRCODE_INTERNAL_ERROR, ERR_INTERNAL_SERVER_ERROR)
+	PUBERR_ENDPOINT_NOT_FOUND               = NewPublicError(http.StatusNotFound, ERRCODE_ENDPOINT_NOT_FOUND, ERR_ENDPOINT_NOT_FOUND)
 	PUBERR_INVALID_AUTH_TOKEN               = NewPublicError(http.StatusUnauthorized, ERRCODE_INVALID_AUTH_TOKEN, ERR_INVALID_AUTH_TOKEN)
 	PUBERR_USER_CREATION_FAILED_EMAIL_TAKEN = NewPublicError(http.StatusInternalServerError, ERRCODE_EMAIL_TAKEN, ERR_USER_CREATION_FAILED+" email address is already in user")
 	PUBERR_INVALID_JSON                     = NewPublicError(http.StatusBadRequest, ERRCODE_INVALID_JSON, ERR_BODY_INVALID_JSON)

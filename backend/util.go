@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"regexp"
 )
 
@@ -28,8 +30,13 @@ func String(i interface{}) (string, bool) {
 func IsValidPassword(s string) bool {
 	matched, err := regexp.MatchString(REGEX_PASSWORD, s)
 	if err != nil {
+		Debug("Password was not valid ", err)
 		return false
 	} else {
 		return matched
 	}
+}
+
+func Debug(i ...interface{}) {
+	log.Println("[DEBUG] ::", fmt.Sprint(i...))
 }

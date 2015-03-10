@@ -50,7 +50,7 @@ func (r *Responder) Json(v interface{}) {
 func (r *Responder) Error(v interface{}) {
 	// Set content type to json
 	r.response.Header().Set(ContentType, ContentJSON)
-	if pubErr, ok := v.(PublicError); ok {
+	if pubErr, ok := v.(*PublicError); ok {
 		r.response.WriteHeader(pubErr.Status)
 		r.response.Write(pubErr.Json)
 	} else {
