@@ -35,12 +35,9 @@ const (
 	SQL_SELECT_USER_BY_ID = `
 		SELECT * FROM ` + TABLE_NAME_USER + ` WHERE (id = $1);
 	`
-
-	ERR_USER_CREATION_FAILED = "Could not create new user: "
-)
-
-var (
-	FULL_ERR_USER_CREATION_FAILED_EMAIL_TAKEN = errors.New(ERR_USER_CREATION_FAILED + "email already taken")
+	SQL_SELECT_USER_BY_EMAIL = `
+		SELECT * FROM ` + TABLE_NAME_USER + ` WHERE (email = $1);
+	`
 )
 
 // The User model represents people who have accounts
@@ -78,7 +75,20 @@ func GetUser(
 ) (*User, error) {
 	var newUser User
 	if err := newUser.populateFromRow(db.QueryRow(SQL_SELECT_USER_BY_ID, id)); err != nil {
-		return nil, errors.New(ERR_USER_CREATION_FAILED + err.Error())
+		return nil, PUBERR_ENTITY_NOT_FOUND
+	} else {
+		return &newUser, nil
+	}
+}
+
+// Finds a User by email
+func FindUserByEmail(
+	db *sql.DB,
+	email string,
+) (*User, error) {
+	var newUser User
+	if err := newUser.populateFromRow(db.QueryRow(SQL_SELECT_USER_BY_EMAIL, email)); err != nil {
+		return nil, PUBERR_ENTITY_NOT_FOUND
 	} else {
 		return &newUser, nil
 	}
@@ -103,7 +113,7 @@ func CreateNewUser(
 	if err != nil {
 		// Check if the issue is email related
 		if strings.Contains(err.Error(), "violates unique constraint \"users_email_key\"") {
-			return -1, FULL_ERR_USER_CREATION_FAILED_EMAIL_TAKEN
+			return -1, PUBERR_USER_CREATION_FAILED_EMAIL_TAKEN
 		} else {
 			return -1, errors.New(ERR_USER_CREATION_FAILED + err.Error())
 		}

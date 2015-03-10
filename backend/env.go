@@ -13,8 +13,6 @@ const (
 	ENV_VAR_DB_PASS    = "DB_PASS"    // Name of the database password environment variable
 	ENV_VAR_JWT_SECRET = "JWT_SECRET" // Name of JWT secret environment variable
 	ENV_VAR_PORT       = "PORT"       // Name of the HTTP poer environment variable
-
-	ERR_ENV_VAR_MISSING = "The environment variable \"%s\" was either missing or invalid"
 )
 
 type Environment struct {

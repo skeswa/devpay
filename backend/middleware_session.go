@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,14 +24,6 @@ const (
 	JWT_CLAIM_USER_PIC_URL    = "pictureUrl"  // JWT claim key for picture url of currently authed user
 	JWT_CLAIM_EXPIRATION      = "expiration"  // JWT claim key for expiration date in secs since epoch
 	JWT_CLAIM_TIME_CREATED    = "timeCreated" // JWT claim key for time created in secs since epoch
-
-	// Session-related errors
-	ERR_JWT_INVALID_CLAIMS  = "Could not parse JWT token claims" // Error occurs when there was a JWT parsing error
-	ERR_JWT_SESSION_EXPIRED = "Session has expired"              // Error occurs when the session has expired
-
-	// Whitelisted API endpoints
-	API_ENDPOINT_REGISTER     = "/api/register"
-	API_ENDPOINT_AUTHENTICATE = "/api/authenticate"
 )
 
 /***************************** TYPE DECLARATIONS ******************************/
@@ -41,7 +34,7 @@ type Session struct {
 	// JWT token with all the data inside
 	token *jwt.Token
 	// Currently authed user's id
-	userId uint64
+	userId int64
 	// Currently authed user's first name
 	firstName string
 	// Currently authed user's last name
@@ -79,7 +72,7 @@ func lookupJWTKey(token *jwt.Token) (interface{}, error) {
 
 // Marshals a session into a JWT token
 func MarshalSession(sesh Session, token *jwt.Token) {
-	token.Claims[JWT_CLAIM_USER_ID] = strconv.FormatUint(sesh.userId, 64)
+	token.Claims[JWT_CLAIM_USER_ID] = strconv.FormatInt(sesh.userId, 64)
 	token.Claims[JWT_CLAIM_USER_FIRST_NAME] = sesh.firstName
 	token.Claims[JWT_CLAIM_USER_LAST_NAME] = sesh.lastName
 	token.Claims[JWT_CLAIM_USER_EMAIL] = sesh.email
@@ -129,7 +122,7 @@ func UnmarshalSession(token *jwt.Token) (*Session, error) {
 	}
 
 	// Perform checks for both the numbers
-	userId, err := strconv.ParseUint(userIdStr, 10, 64)
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
 		return nil, errors.New(ERR_JWT_INVALID_CLAIMS)
 	}
@@ -153,14 +146,50 @@ func UnmarshalSession(token *jwt.Token) (*Session, error) {
 
 /****************************** PUBLIC FUNCTIONS ******************************/
 
+// Creates a new token from session data
+func NewSessionToken(
+	userId int64,
+	firstName string,
+	lastName string,
+	email string,
+	pictureUrl string,
+) (string, error) {
+	// Create the session
+	sesh := Session{
+		userId:      userId,
+		firstName:   firstName,
+		lastName:    lastName,
+		email:       email,
+		pictureUrl:  pictureUrl,
+		expiration:  time.Now().Add(SESSION_LENGTH).Unix(),
+		timeCreated: time.Now().Unix(),
+	}
+	// Create the token
+	token := jwt.New(jwt.SigningMethodHS256)
+	// Marshall the session into the token
+	MarshalSession(sesh, token)
+	// Get the secret key
+	key, err := lookupJWTKey(nil)
+	if err != nil {
+		return "", err
+	}
+	// Stringify the token
+	return token.SignedString(key)
+}
+
 // Martini middleware that provides the session to martini handlers
 func Sessionize(res http.ResponseWriter, req *http.Request, c martini.Context) {
-	// First check if the current path is whitelisted
-	if (req.URL.Path != API_ENDPOINT_REGISTER) && (req.URL.Path != API_ENDPOINT_AUTHENTICATE) {
+	// First check if the current path is not blacklisted
+	if strings.Index(req.URL.Path, API_PREFIX) == 0 &&
+		(req.URL.Path != API_AUTHENTICATE) &&
+		(req.URL.Path != API_REGISTER_USER) {
+		// Get the JWT token
 		token, err := jwt.ParseFromRequest(req, lookupJWTKey)
-		// Check out whether we're fine
+		// Check out whether the token is good
 		if err != nil || !token.Valid {
-			http.Error(res, "Authorization token was invalid", http.StatusUnauthorized)
+			res.Header().Set(ContentType, ContentJSON)
+			res.WriteHeader(http.StatusUnauthorized)
+			res.Write(PUBERR_INVALID_AUTH_TOKEN.Json)
 		} else {
 			// Embed the token data in the context
 			sesh, err := UnmarshalSession(token)
@@ -178,33 +207,4 @@ func Sessionize(res http.ResponseWriter, req *http.Request, c martini.Context) {
 		// This path is whitelisted
 		c.Next()
 	}
-}
-
-// Creates a new token from session data
-func NewSessionToken(
-	userId uint64,
-	firstName string,
-	lastName string,
-	email string,
-) (string, error) {
-	// Create the session
-	sesh := Session{
-		userId:      userId,
-		firstName:   firstName,
-		lastName:    lastName,
-		email:       email,
-		expiration:  time.Now().Add(SESSION_LENGTH).Unix(),
-		timeCreated: time.Now().Unix(),
-	}
-	// Create the token
-	token := jwt.New(jwt.SigningMethodHS256)
-	// Marshall the session into the token
-	MarshalSession(sesh, token)
-	// Get the secret key
-	key, err := lookupJWTKey(nil)
-	if err != nil {
-		return "", err
-	}
-	// Stringify the token
-	return token.SignedString(key)
 }

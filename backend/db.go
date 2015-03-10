@@ -10,8 +10,6 @@ import (
 const (
 	// String templates
 	TEMPLATE_PG_CONN_STRING = "user=%s dbname=%s sslmode=disable"
-
-	ERR_TABLE_CREATION_FAILED = "Failed to create database table \"%s\": %s"
 )
 
 func SetupDatabase(env *Environment) (*sql.DB, error) {
