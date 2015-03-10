@@ -59,6 +59,7 @@ type User struct {
 // Fills user with data from a db row
 func (u User) populateFromRow(row *sql.Row) error {
 	// Scan for member fields
+	Debug("Populate from row ", *row)
 	return row.Scan(&u.Id, &u.FirstName, &u.LastName, &u.Email, &u.HashedPassword, &u.StripeId, &u.PictureUrl, &u.Active, &u.CreatedAt, &u.UpdatedAt, &u.DeletedAt)
 }
 
@@ -73,12 +74,46 @@ func GetUser(
 	db *sql.DB,
 	id int64,
 ) (*User, error) {
-	var newUser User
-	if err := newUser.populateFromRow(db.QueryRow(SQL_SELECT_USER_BY_ID, id)); err != nil {
+	rows, err := db.Query(SQL_SELECT_USER_BY_ID, id)
+	if err != nil {
 		return nil, PUBERR_ENTITY_NOT_FOUND
-	} else {
-		return &newUser, nil
 	}
+	// Read the rows
+	var (
+		newId             int64
+		newFirstName      string
+		newLastName       string
+		newEmail          string
+		newHashedPassword string
+		newStripeId       string
+		newPictureUrl     string
+		newActive         bool
+		newCreatedAt      time.Time
+		newUpdatedAt      time.Time
+		newDeletedAt      pq.NullTime
+	)
+	for rows.Next() {
+		err = rows.Scan(&newId, &newFirstName, &newLastName, &newEmail, &newHashedPassword, &newStripeId, &newPictureUrl, &newActive, &newCreatedAt, &newUpdatedAt, &newDeletedAt)
+		if err != nil {
+			return nil, err
+		} else {
+			return &User{
+				Id:             newId,
+				FirstName:      newFirstName,
+				LastName:       newLastName,
+				Email:          newEmail,
+				HashedPassword: newHashedPassword,
+				StripeId:       newStripeId,
+				PictureUrl:     newPictureUrl,
+				Active:         newActive,
+				CreatedAt:      newCreatedAt,
+				UpdatedAt:      newUpdatedAt,
+				DeletedAt:      newDeletedAt,
+			}, nil
+		}
+	}
+	return nil, PUBERR_ENTITY_NOT_FOUND
+
 }
 
 // Finds a User by email

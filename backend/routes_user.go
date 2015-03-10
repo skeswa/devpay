@@ -7,7 +7,6 @@ import (
 	validator "github.com/asaskevich/govalidator"
 	"github.com/go-martini/martini"
 	"golang.org/x/crypto/bcrypt"
-	"math/rand"
 	"net/http"
 )
 
@@ -66,13 +65,13 @@ func SetupUserRoutes(m *martini.ClassicMartini, db *sql.DB, env *Environment) {
 			return
 		}
 		pictureUrl, ok = String(body[USER_FIELD_PICTURE_URL])
-		if !ok || !validator.IsURL(pictureUrl) {
+		if !ok {
 			responder.Error(NewPublicError(http.StatusBadRequest, ERRCODE_INVALID_FIELD, fmt.Sprintf(ERR_BODY_FIELD_INVALID, USER_FIELD_PICTURE_URL)))
 			return
 		}
 
 		// Build hashed password
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), rand.Int())
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 7)
 		if err != nil {
 			responder.Error(err)
 			return

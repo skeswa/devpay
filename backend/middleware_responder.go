@@ -54,6 +54,7 @@ func (r *Responder) Error(v interface{}) {
 		r.response.WriteHeader(pubErr.Status)
 		r.response.Write(pubErr.Json)
 	} else {
+		Debug("Received private error: ", v)
 		r.response.WriteHeader(http.StatusInternalServerError)
 		r.response.Write(PUBERR_INTERNAL_SERVER_ERROR.Json)
 	}
