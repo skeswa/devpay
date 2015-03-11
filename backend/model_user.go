@@ -46,7 +46,7 @@ type User struct {
 	FirstName      string // The first name of the user
 	LastName       string // The last name of the user
 	Email          string // The email address of the user (indexed)
-	HashedPassword string // The bcrypted password of the user
+	HashedPassword string `json:"-"` // The bcrypted password of the user
 	StripeId       string // The id of the user with Stripe's API
 	PictureUrl     string // The URL to user's picture
 
@@ -79,41 +79,17 @@ func GetUser(
 		return nil, PUBERR_ENTITY_NOT_FOUND
 	}
 	// Read the rows
-	var (
-		newId             int64
-		newFirstName      string
-		newLastName       string
-		newEmail          string
-		newHashedPassword string
-		newStripeId       string
-		newPictureUrl     string
-		newActive         bool
-		newCreatedAt      time.Time
-		newUpdatedAt      time.Time
-		newDeletedAt      pq.NullTime
-	)
+	var newUser User
 	for rows.Next() {
-		err = rows.Scan(&newId, &newFirstName, &newLastName, &newEmail, &newHashedPassword, &newStripeId, &newPictureUrl, &newActive, &newCreatedAt, &newUpdatedAt, &newDeletedAt)
+		err = rows.Scan(&newUser.Id, &newUser.FirstName, &newUser.LastName, &newUser.Email, &newUser.HashedPassword, &newUser.StripeId, &newUser.PictureUrl, &newUser.Active, &newUser.CreatedAt, &newUser.UpdatedAt, &newUser.DeletedAt)
 		if err != nil {
 			return nil, err
 		} else {
-			return &User{
-				Id:             newId,
-				FirstName:      newFirstName,
-				LastName:       newLastName,
-				Email:          newEmail,
-				HashedPassword: newHashedPassword,
-				StripeId:       newStripeId,
-				PictureUrl:     newPictureUrl,
-				Active:         newActive,
-				CreatedAt:      newCreatedAt,
-				UpdatedAt:      newUpdatedAt,
-				DeletedAt:      newDeletedAt,
-			}, nil
+			return &newUser, nil
 		}
 	}
+	// We didn't find any users
 	return nil, PUBERR_ENTITY_NOT_FOUND
-
 }
 
 // Finds a User by email
@@ -121,12 +97,22 @@ func FindUserByEmail(
 	db *sql.DB,
 	email string,
 ) (*User, error) {
-	var newUser User
-	if err := newUser.populateFromRow(db.QueryRow(SQL_SELECT_USER_BY_EMAIL, email)); err != nil {
+	rows, err := db.Query(SQL_SELECT_USER_BY_EMAIL, email)
+	if err != nil {
 		return nil, PUBERR_ENTITY_NOT_FOUND
-	} else {
-		return &newUser, nil
 	}
+	// Read the rows
+	var newUser User
+	for rows.Next() {
+		err = rows.Scan(&newUser.Id, &newUser.FirstName, &newUser.LastName, &newUser.Email, &newUser.HashedPassword, &newUser.StripeId, &newUser.PictureUrl, &newUser.Active, &newUser.CreatedAt, &newUser.UpdatedAt, &newUser.DeletedAt)
+		if err != nil {
+			return nil, err
+		} else {
+			return &newUser, nil
+		}
+	}
+	// We didn't find any users
+	return nil, PUBERR_ENTITY_NOT_FOUND
 }
 
 // Creates a new User in the database; returns the id of the new user
@@ -143,7 +129,6 @@ func CreateNewUser(
 		id  int64
 		now = time.Now()
 	)
-
 	err := db.QueryRow(SQL_CREATE_NEW_USER, FirstName, LastName, Email, HashedPassword, StripeId, PictureUrl, true, now, now).Scan(&id)
 	if err != nil {
 		// Check if the issue is email related

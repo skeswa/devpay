@@ -4,9 +4,7 @@ import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-martini/martini"
-	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -34,51 +32,37 @@ type Session struct {
 	// JWT token with all the data inside
 	token *jwt.Token
 	// Currently authed user's id
-	userId int64
+	UserId int64 `json:"userId"`
 	// Currently authed user's first name
-	firstName string
+	FirstName string `json:"firstName"`
 	// Currently authed user's last name
-	lastName string
+	LastName string `json:"lastName"`
 	// Currently authed user's email
-	email string
+	Email string `json:"email"`
 	// Currently authed user's picture url
-	pictureUrl string
+	PictureUrl string `json:"pictureUrl"`
 	// Time when session expires
-	expiration int64
+	Expiration int64 `json:"expiration"`
 	// Time when the session was created
-	timeCreated int64
+	TimeCreated int64 `json:"-"`
 }
 
 // Returns the duration of the current session in seconds
 func (s *Session) Duration() int64 {
-	return time.Now().Unix() - s.timeCreated
-}
-
-/****************************** HELPER FUNCTIONS ******************************/
-
-func lookupJWTKey(token *jwt.Token) (interface{}, error) {
-	// Get secret from env
-	secret := os.Getenv(ENV_VAR_JWT_SECRET)
-	if secret == "" {
-		// The secret is bogus
-		log.Println("Could not read the JWT secret environment variable")
-		return nil, errors.New("JWT secret environment variable was missing")
-	} else {
-		return secret, nil
-	}
+	return time.Now().Unix() - s.TimeCreated
 }
 
 /***************************** INTERNAL FUNCTIONS *****************************/
 
 // Marshals a session into a JWT token
 func MarshalSession(sesh Session, token *jwt.Token) {
-	token.Claims[JWT_CLAIM_USER_ID] = strconv.FormatInt(sesh.userId, 64)
-	token.Claims[JWT_CLAIM_USER_FIRST_NAME] = sesh.firstName
-	token.Claims[JWT_CLAIM_USER_LAST_NAME] = sesh.lastName
-	token.Claims[JWT_CLAIM_USER_EMAIL] = sesh.email
-	token.Claims[JWT_CLAIM_USER_PIC_URL] = sesh.pictureUrl
-	token.Claims[JWT_CLAIM_EXPIRATION] = strconv.FormatInt(sesh.expiration, 64)
-	token.Claims[JWT_CLAIM_TIME_CREATED] = strconv.FormatInt(sesh.timeCreated, 64)
+	token.Claims[JWT_CLAIM_USER_ID] = strconv.FormatInt(sesh.UserId, 10)
+	token.Claims[JWT_CLAIM_USER_FIRST_NAME] = sesh.FirstName
+	token.Claims[JWT_CLAIM_USER_LAST_NAME] = sesh.LastName
+	token.Claims[JWT_CLAIM_USER_EMAIL] = sesh.Email
+	token.Claims[JWT_CLAIM_USER_PIC_URL] = sesh.PictureUrl
+	token.Claims[JWT_CLAIM_EXPIRATION] = strconv.FormatInt(sesh.Expiration, 10)
+	token.Claims[JWT_CLAIM_TIME_CREATED] = strconv.FormatInt(sesh.TimeCreated, 10)
 }
 
 // Parses a session struct out of a token
@@ -134,13 +118,13 @@ func UnmarshalSession(token *jwt.Token) (*Session, error) {
 	// Everything is hunky dory
 	return &Session{
 		token:       token,
-		userId:      userId,
-		firstName:   firstName,
-		lastName:    lastName,
-		email:       email,
-		pictureUrl:  pictureUrl,
-		expiration:  expiration,
-		timeCreated: timeCreated,
+		UserId:      userId,
+		FirstName:   firstName,
+		LastName:    lastName,
+		Email:       email,
+		PictureUrl:  pictureUrl,
+		Expiration:  expiration,
+		TimeCreated: timeCreated,
 	}, nil
 }
 
@@ -148,6 +132,7 @@ func UnmarshalSession(token *jwt.Token) (*Session, error) {
 
 // Creates a new token from session data
 func NewSessionToken(
+	env *Environment,
 	userId int64,
 	firstName string,
 	lastName string,
@@ -156,35 +141,32 @@ func NewSessionToken(
 ) (string, error) {
 	// Create the session
 	sesh := Session{
-		userId:      userId,
-		firstName:   firstName,
-		lastName:    lastName,
-		email:       email,
-		pictureUrl:  pictureUrl,
-		expiration:  time.Now().Add(SESSION_LENGTH).Unix(),
-		timeCreated: time.Now().Unix(),
+		UserId:      userId,
+		FirstName:   firstName,
+		LastName:    lastName,
+		Email:       email,
+		PictureUrl:  pictureUrl,
+		Expiration:  time.Now().Add(SESSION_LENGTH).Unix(),
+		TimeCreated: time.Now().Unix(),
 	}
 	// Create the token
 	token := jwt.New(jwt.SigningMethodHS256)
 	// Marshall the session into the token
 	MarshalSession(sesh, token)
-	// Get the secret key
-	key, err := lookupJWTKey(nil)
-	if err != nil {
-		return "", err
-	}
 	// Stringify the token
-	return token.SignedString(key)
+	return token.SignedString([]byte(env.jwtSecret))
 }
 
 // Martini middleware that provides the session to martini handlers
-func Sessionize(res http.ResponseWriter, req *http.Request, c martini.Context) {
+func Sessionize(res http.ResponseWriter, req *http.Request, env *Environment, c martini.Context) {
 	// First check if the current path is not blacklisted
 	if strings.Index(req.URL.Path, API_PREFIX) == 0 &&
 		(req.URL.Path != API_AUTHENTICATE) &&
 		(req.URL.Path != API_REGISTER_USER) {
 		// Get the JWT token
-		token, err := jwt.ParseFromRequest(req, lookupJWTKey)
+		token, err := jwt.ParseFromRequest(req, func(token *jwt.Token) (interface{}, error) {
+			return []byte(env.jwtSecret), nil
+		})
 		// Check out whether the token is good
 		if err != nil || !token.Valid {
 			res.Header().Set(ContentType, ContentJSON)

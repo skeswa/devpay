@@ -48,6 +48,7 @@ func SetupAuthRoutes(m *martini.ClassicMartini, db *sql.DB, env *Environment) {
 				responder.Error(PUBERR_INVALID_CREDENTIALS)
 			} else {
 				token, err := NewSessionToken(
+					env,
 					user.Id,
 					user.FirstName,
 					user.LastName,
@@ -61,5 +62,9 @@ func SetupAuthRoutes(m *martini.ClassicMartini, db *sql.DB, env *Environment) {
 				}
 			}
 		}
+	})
+	// Returns session information
+	m.Get(API_SESSION, func(session *Session, responder *Responder) {
+		responder.Json(session)
 	})
 }

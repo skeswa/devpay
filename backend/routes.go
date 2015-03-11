@@ -8,6 +8,7 @@ import (
 const (
 	API_PREFIX = "/api"
 	// Auth routes
+	API_SESSION      = API_PREFIX + "/session"
 	API_AUTHENTICATE = API_PREFIX + "/authenticate"
 	// User routes
 	API_REGISTER_USER = API_PREFIX + "/users"
