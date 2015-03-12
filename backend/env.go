@@ -12,7 +12,8 @@ const (
 	ENV_VAR_DB_USER    = "DB_USER"    // Name of the database user environment variable
 	ENV_VAR_DB_PASS    = "DB_PASS"    // Name of the database password environment variable
 	ENV_VAR_JWT_SECRET = "JWT_SECRET" // Name of JWT secret environment variable
-	ENV_VAR_PORT       = "PORT"       // Name of the HTTP poer environment variable
+	ENV_VAR_PORT       = "PORT"       // Name of the HTTP port environment variable
+	ENV_VAR_STRIPE_ID  = "STRIPE_ID"  // Name of the stripe is environment variable
 )
 
 type Environment struct {
@@ -21,6 +22,7 @@ type Environment struct {
 	dbPass    string
 	jwtSecret string
 	port      int
+	stripeId  string
 }
 
 func NewEnvironment() (*Environment, error) {
@@ -44,6 +46,10 @@ func NewEnvironment() (*Environment, error) {
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf(ERR_ENV_VAR_MISSING, ENV_VAR_PORT))
+	}
+	stripeId := os.Getenv(ENV_VAR_STRIPE_ID)
+	if stripeId == "" {
+		return nil, errors.New(fmt.Sprintf(ERR_ENV_VAR_MISSING, ENV_VAR_STRIPE_ID))
 	}
 	// Optional variables
 	dbPass := os.Getenv(ENV_VAR_DB_PASS)

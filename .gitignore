@@ -27,4 +27,5 @@ _testmain.go
 
 *server
 !*server/
+env/dev.json
 env/prod.json
