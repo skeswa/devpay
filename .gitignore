@@ -29,3 +29,4 @@ _testmain.go
 !*server/
 env/dev.json
 env/prod.json
+public/
