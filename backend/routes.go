@@ -12,7 +12,7 @@ const (
 	API_AUTHENTICATE = API_PREFIX + "/authenticate"
 	// User routes
 	API_REGISTER_USER = API_PREFIX + "/users"
-	API_GET_ALL_USERS = API_PREFIX + "/users"
+	API_GET_USERS     = API_PREFIX + "/users"
 	API_GET_USER      = API_PREFIX + "/users/:id"
 )
 

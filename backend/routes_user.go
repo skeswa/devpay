@@ -8,6 +8,7 @@ import (
 	"github.com/go-martini/martini"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"strconv"
 )
 
 const (
@@ -95,6 +96,27 @@ func SetupUserRoutes(m *martini.ClassicMartini, db *sql.DB, env *Environment) {
 				responder.Json(newUser)
 				return
 			}
+		}
+	})
+
+	// Gets a list of users
+	m.Get(API_GET_USERS, func(responder *Responder, req *http.Request) {
+		values := req.URL.Query()
+
+		offset, err := strconv.Atoi(values.Get("offset"))
+		if err != nil {
+			offset = 0
+		}
+		limit, err := strconv.Atoi(values.Get("limit"))
+		if err != nil {
+			limit = 20
+		}
+
+		users, err := GetUsers(db, offset, limit)
+		if err != nil {
+			responder.Error(err)
+		} else {
+			responder.Json(users)
 		}
 	})
 }

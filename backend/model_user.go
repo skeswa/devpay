@@ -38,6 +38,9 @@ const (
 	SQL_SELECT_USER_BY_EMAIL = `
 		SELECT * FROM ` + TABLE_NAME_USER + ` WHERE (email = $1);
 	`
+	SQL_SELECT_USERS = `
+		SELECT * FROM ` + TABLE_NAME_USER + ` OFFSET $1 LIMIT $2;
+	`
 )
 
 // The User model represents people who have accounts
@@ -53,7 +56,7 @@ type User struct {
 	Active    bool        // True if this entity has not been soft deleted
 	CreatedAt time.Time   // The time when this user was created
 	UpdatedAt time.Time   // The time when this user was last updated
-	DeletedAt pq.NullTime // The time when this user was soft deleted
+	DeletedAt pq.NullTime `json:"-"` // The time when this user was soft deleted
 }
 
 // Fills user with data from a db row
@@ -79,6 +82,7 @@ func GetUser(
 		return nil, PUBERR_ENTITY_NOT_FOUND
 	}
 	// Read the rows
+	defer rows.Close()
 	var newUser User
 	for rows.Next() {
 		err = rows.Scan(&newUser.Id, &newUser.FirstName, &newUser.LastName, &newUser.Email, &newUser.HashedPassword, &newUser.StripeId, &newUser.PictureUrl, &newUser.Active, &newUser.CreatedAt, &newUser.UpdatedAt, &newUser.DeletedAt)
@@ -92,6 +96,32 @@ func GetUser(
 	return nil, PUBERR_ENTITY_NOT_FOUND
 }
 
+// Gets a User from the database by id
+func GetUsers(
+	db *sql.DB,
+	offset int,
+	limit int,
+) ([]*User, error) {
+	rows, err := db.Query(SQL_SELECT_USERS, offset, limit)
+	if err != nil {
+		return nil, PUBERR_ENTITY_NOT_FOUND
+	}
+	// Read the rows
+	defer rows.Close()
+	users := make([]*User, 0, limit)
+	for rows.Next() {
+		var newUser User
+		err = rows.Scan(&newUser.Id, &newUser.FirstName, &newUser.LastName, &newUser.Email, &newUser.HashedPassword, &newUser.StripeId, &newUser.PictureUrl, &newUser.Active, &newUser.CreatedAt, &newUser.UpdatedAt, &newUser.DeletedAt)
+		if err != nil {
+			return nil, err
+		} else {
+			users = append(users, &newUser)
+		}
+	}
+	// We didn't find any users
+	return users, nil
+}
+
 // Finds a User by email
 func FindUserByEmail(
 	db *sql.DB,
@@ -102,6 +132,7 @@ func FindUserByEmail(
 		return nil, PUBERR_ENTITY_NOT_FOUND
 	}
 	// Read the rows
+	defer rows.Close()
 	var newUser User
 	for rows.Next() {
 		err = rows.Scan(&newUser.Id, &newUser.FirstName, &newUser.LastName, &newUser.Email, &newUser.HashedPassword, &newUser.StripeId, &newUser.PictureUrl, &newUser.Active, &newUser.CreatedAt, &newUser.UpdatedAt, &newUser.DeletedAt)
