@@ -12,6 +12,13 @@ const (
 	TEMPLATE_PG_CONN_STRING = "user=%s dbname=%s sslmode=disable"
 )
 
+type Queryable interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
+}
+
 func SetupDatabase(env *Environment) (*sql.DB, error) {
 	// Connect using the parameters above
 	connString := fmt.Sprintf(TEMPLATE_PG_CONN_STRING, env.dbUser, env.dbName)

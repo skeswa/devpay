@@ -6,6 +6,20 @@ import (
 	"time"
 )
 
+// The ClaimEvidence model represents proof that supports a Claim
+type ClaimEvidence struct {
+	Id   int64  // The identifier of the contribution
+	Type int    // The type of the claim
+	Url  string // The url of the evidence
+
+	ClaimId sql.NullInt64 // The id of the claim; Foreign key for Claim (belongs to)
+
+	Active    bool        // True if this entity has not been soft deleted
+	CreatedAt time.Time   // The time when this claim evidence was created
+	UpdatedAt time.Time   // The time when this claim evidence was last updated
+	DeletedAt pq.NullTime // The time when this user was soft deleted
+}
+
 const (
 	TABLE_NAME_CLAIM_EVIDENCE = "claim_evidence"
 
@@ -24,20 +38,6 @@ const (
 		);
 	`
 )
-
-// The ClaimEvidence model represents proof that supports a Claim
-type ClaimEvidence struct {
-	Id   int64  // The identifier of the contribution
-	Type int    // The type of the claim
-	Url  string // The url of the evidence
-
-	ClaimId sql.NullInt64 // The id of the claim; Foreign key for Claim (belongs to)
-
-	Active    bool        // True if this entity has not been soft deleted
-	CreatedAt time.Time   // The time when this claim evidence was created
-	UpdatedAt time.Time   // The time when this claim evidence was last updated
-	DeletedAt pq.NullTime // The time when this user was soft deleted
-}
 
 // Creates the ClaimEvidence table if it doesn't already exist
 func CreateClaimEvidenceTable(db *sql.DB) error {

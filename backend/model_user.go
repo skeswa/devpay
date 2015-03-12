@@ -1,15 +1,35 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
-	"errors"
+	"fmt"
 	"github.com/lib/pq"
+	"strconv"
 	"strings"
 	"time"
 )
 
+// The User model represents people who have accounts
+type User struct {
+	Id             int64  `json:"id"`         // The identifier of the user
+	FirstName      string `json:"firstName"`  // The first name of the user
+	LastName       string `json:"lastName"`   // The last name of the user
+	Email          string `json:"email"`      // The email address of the user (indexed)
+	HashedPassword string `json:"-"`          // The bcrypted password of the user
+	StripeId       string `json:"-"`          // The id of the user with Stripe's API
+	PictureUrl     string `json:"pictureUrl"` // The URL to user's picture
+
+	Active    bool        `json:"active"`    // True if this entity has not been soft deleted
+	CreatedAt time.Time   `json:"createdAt"` // The time when this user was created
+	UpdatedAt time.Time   `json:"updatedAt"` // The time when this user was last updated
+	DeletedAt pq.NullTime `json:"-"`         // The time when this user was soft deleted
+}
+
 const (
 	TABLE_NAME_USER = "users"
+
+	FIELD_USER_STRIPE_ID = "stripe_id"
 
 	SQL_CREATE_TABLE_USER = `
 		CREATE TABLE IF NOT EXISTS ` + TABLE_NAME_USER + `(
@@ -41,23 +61,10 @@ const (
 	SQL_SELECT_USERS = `
 		SELECT * FROM ` + TABLE_NAME_USER + ` OFFSET $1 LIMIT $2;
 	`
+	SQL_UPDATE_USER = `
+		UPDATE ` + TABLE_NAME_USER + ` SET %s WHERE (id = $1);;
+	`
 )
-
-// The User model represents people who have accounts
-type User struct {
-	Id             int64  // The identifier of the user
-	FirstName      string // The first name of the user
-	LastName       string // The last name of the user
-	Email          string // The email address of the user (indexed)
-	HashedPassword string `json:"-"` // The bcrypted password of the user
-	StripeId       string // The id of the user with Stripe's API
-	PictureUrl     string // The URL to user's picture
-
-	Active    bool        // True if this entity has not been soft deleted
-	CreatedAt time.Time   // The time when this user was created
-	UpdatedAt time.Time   // The time when this user was last updated
-	DeletedAt pq.NullTime `json:"-"` // The time when this user was soft deleted
-}
 
 // Fills user with data from a db row
 func (u User) populateFromRow(row *sql.Row) error {
@@ -74,7 +81,7 @@ func CreateUserTable(db *sql.DB) error {
 
 // Gets a User from the database by id
 func GetUser(
-	db *sql.DB,
+	db Queryable,
 	id int64,
 ) (*User, error) {
 	rows, err := db.Query(SQL_SELECT_USER_BY_ID, id)
@@ -83,13 +90,13 @@ func GetUser(
 	}
 	// Read the rows
 	defer rows.Close()
-	var newUser User
+	var user User
 	for rows.Next() {
-		err = rows.Scan(&newUser.Id, &newUser.FirstName, &newUser.LastName, &newUser.Email, &newUser.HashedPassword, &newUser.StripeId, &newUser.PictureUrl, &newUser.Active, &newUser.CreatedAt, &newUser.UpdatedAt, &newUser.DeletedAt)
+		err = rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.HashedPassword, &user.StripeId, &user.PictureUrl, &user.Active, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
 		if err != nil {
 			return nil, err
 		} else {
-			return &newUser, nil
+			return &user, nil
 		}
 	}
 	// We didn't find any users
@@ -98,7 +105,7 @@ func GetUser(
 
 // Gets a User from the database by id
 func GetUsers(
-	db *sql.DB,
+	db Queryable,
 	offset int,
 	limit int,
 ) ([]*User, error) {
@@ -124,7 +131,7 @@ func GetUsers(
 
 // Finds a User by email
 func FindUserByEmail(
-	db *sql.DB,
+	db Queryable,
 	email string,
 ) (*User, error) {
 	rows, err := db.Query(SQL_SELECT_USER_BY_EMAIL, email)
@@ -148,7 +155,7 @@ func FindUserByEmail(
 
 // Creates a new User in the database; returns the id of the new user
 func CreateNewUser(
-	db *sql.DB, // The database
+	db Queryable, // The database
 	FirstName string, // The first name of the user
 	LastName string, // The last name of the user
 	Email string, // The email address of the user (indexed)
@@ -166,9 +173,44 @@ func CreateNewUser(
 		if strings.Contains(err.Error(), "violates unique constraint \"users_email_key\"") {
 			return -1, PUBERR_USER_CREATION_FAILED_EMAIL_TAKEN
 		} else {
-			return -1, errors.New(ERR_USER_CREATION_FAILED + err.Error())
+			return -1, err
 		}
 	} else {
 		return id, nil
 	}
+}
+
+// Updates a specific set of fields of a user
+func UpdateUserFields(
+	db Queryable, // The database
+	id int64, // The id of the user being updated
+	keyVals map[string]interface{}, // Field deltas
+) error {
+	if len(keyVals) < 1 {
+		return nil
+	}
+	// Ensure "updated_at" is accurate
+	keyVals["updated_at"] = time.Now()
+
+	var (
+		updates bytes.Buffer
+		values  = make([]interface{}, 1, (len(keyVals) + 1))
+		i       = 0
+	)
+	// Add the id as the first query param
+	values[0] = id
+	// Built the SET section of the quuery
+	for fieldName, fieldVal := range keyVals {
+		if i > 0 {
+			updates.WriteString(", ")
+		}
+		updates.WriteString(fieldName)
+		updates.WriteString(" = $")
+		updates.WriteString(strconv.Itoa(i + 2))
+		values = append(values, fieldVal)
+		i = i + 1
+	}
+	// Execute the query
+	_, err := db.Exec(fmt.Sprintf(SQL_UPDATE_USER, updates.String()), values...)
+	return err
 }

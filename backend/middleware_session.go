@@ -162,7 +162,7 @@ func Sessionize(res http.ResponseWriter, req *http.Request, env *Environment, c 
 	// First check if the current path is not blacklisted
 	if strings.Index(req.URL.Path, API_PREFIX) == 0 &&
 		(req.URL.Path != API_AUTHENTICATE) &&
-		(req.URL.Path != API_REGISTER_USER) {
+		!(req.URL.Path == API_REGISTER_USER && req.Method == "POST") {
 		// Get the JWT token
 		token, err := jwt.ParseFromRequest(req, func(token *jwt.Token) (interface{}, error) {
 			return []byte(env.jwtSecret), nil
@@ -187,6 +187,7 @@ func Sessionize(res http.ResponseWriter, req *http.Request, env *Environment, c 
 		}
 	} else {
 		// This path is whitelisted
+		Debug("Request \"" + req.Method + " " + req.URL.Path + "\" was unauthenticated since its path is whitelisted")
 		c.Next()
 	}
 }

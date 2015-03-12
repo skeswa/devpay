@@ -16,9 +16,12 @@ func main() {
 	if err != nil {
 		log.Fatalln(ERR_COULDNT_START + err.Error())
 	}
-
+	// Setup the Stripe API
+	SetupStripe(env)
+	// Setup server
 	m := martini.Classic()
 	SetupMiddleware(m, db, env)
 	SetupRoutes(m, db, env)
+	// Start the server
 	m.Run()
 }

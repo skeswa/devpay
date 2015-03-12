@@ -15,21 +15,22 @@ const (
 	ERRCODE_INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
 	ERRCODE_ENTITY_NOT_FOUND    = "ENTITY_NOT_FOUND"
 
-	ERR_INTERNAL_SERVER_ERROR = "There was an internal issue"
-	ERR_ENDPOINT_NOT_FOUND    = "Endpoint does not exist"
-	ERR_INVALID_AUTH_TOKEN    = "Authorization token is invalid"
-	ERR_USER_CREATION_FAILED  = "Could not create new user: "
-	ERR_INVALID_CREDENTIALS   = "Given credentials were invalid"
-	ERR_TABLE_CREATION_FAILED = "Failed to create database table \"%s\": %s"
-	ERR_ENV_VAR_MISSING       = "The environment variable \"%s\" was either missing or invalid"
-	ERR_COULDNT_START         = "Couldn't start the the server: "
-	ERR_JWT_INVALID_CLAIMS    = "Could not parse JWT token claims" // Error occurs when there was a JWT parsing error
-	ERR_JWT_SESSION_EXPIRED   = "Session has expired"              // Error occurs when the session has expired
-	ERR_BODY_INVALID_JSON     = "Body was invalid JSON"
-	ERR_BODY_FIELD_INVALID    = "The \"%s\" field is invalid or ill-formatted"
-	ERR_COULD_NOT_HASH_PASS   = "Failed to hash the password field"
-	ERR_COULD_CREATE_USER     = "Failed to create a new user"
-	ERR_ENTITY_NOT_FOUND      = "Could not find entity matching provided information"
+	ERR_INTERNAL_SERVER_ERROR    = "There was an internal issue"
+	ERR_ENDPOINT_NOT_FOUND       = "Endpoint does not exist"
+	ERR_INVALID_AUTH_TOKEN       = "Authorization token is invalid"
+	ERR_USER_CREATION_FAILED     = "Could not create new user: "
+	ERR_CAMPAIGN_CREATION_FAILED = "Could not create new campaign: "
+	ERR_INVALID_CREDENTIALS      = "Given credentials were invalid"
+	ERR_TABLE_CREATION_FAILED    = "Failed to create database table \"%s\": %s"
+	ERR_ENV_VAR_MISSING          = "The environment variable \"%s\" was either missing or invalid"
+	ERR_COULDNT_START            = "Couldn't start the the server: "
+	ERR_JWT_INVALID_CLAIMS       = "Could not parse JWT token claims" // Error occurs when there was a JWT parsing error
+	ERR_JWT_SESSION_EXPIRED      = "Session has expired"              // Error occurs when the session has expired
+	ERR_BODY_INVALID_JSON        = "Body was invalid JSON"
+	ERR_BODY_FIELD_INVALID       = "The \"%s\" field is invalid or ill-formatted"
+	ERR_COULD_NOT_HASH_PASS      = "Failed to hash the password field"
+	ERR_COULD_CREATE_USER        = "Failed to create a new user"
+	ERR_ENTITY_NOT_FOUND         = "Could not find entity matching provided information"
 )
 
 var (

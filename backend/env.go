@@ -8,21 +8,21 @@ import (
 )
 
 const (
-	ENV_VAR_DB_NAME    = "DB_NAME"    // Name of the database name environment variable
-	ENV_VAR_DB_USER    = "DB_USER"    // Name of the database user environment variable
-	ENV_VAR_DB_PASS    = "DB_PASS"    // Name of the database password environment variable
-	ENV_VAR_JWT_SECRET = "JWT_SECRET" // Name of JWT secret environment variable
-	ENV_VAR_PORT       = "PORT"       // Name of the HTTP port environment variable
-	ENV_VAR_STRIPE_ID  = "STRIPE_ID"  // Name of the stripe is environment variable
+	ENV_VAR_DB_NAME        = "DB_NAME"        // Name of the database name environment variable
+	ENV_VAR_DB_USER        = "DB_USER"        // Name of the database user environment variable
+	ENV_VAR_DB_PASS        = "DB_PASS"        // Name of the database password environment variable
+	ENV_VAR_JWT_SECRET     = "JWT_SECRET"     // Name of JWT secret environment variable
+	ENV_VAR_PORT           = "PORT"           // Name of the HTTP port environment variable
+	ENV_VAR_STRIPE_API_KEY = "STRIPE_API_KEY" // Name of the stripe is environment variable
 )
 
 type Environment struct {
-	dbName    string
-	dbUser    string
-	dbPass    string
-	jwtSecret string
-	port      int
-	stripeId  string
+	dbName       string
+	dbUser       string
+	dbPass       string
+	jwtSecret    string
+	port         int
+	stripeAPIKey string
 }
 
 func NewEnvironment() (*Environment, error) {
@@ -47,18 +47,19 @@ func NewEnvironment() (*Environment, error) {
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf(ERR_ENV_VAR_MISSING, ENV_VAR_PORT))
 	}
-	stripeId := os.Getenv(ENV_VAR_STRIPE_ID)
-	if stripeId == "" {
-		return nil, errors.New(fmt.Sprintf(ERR_ENV_VAR_MISSING, ENV_VAR_STRIPE_ID))
+	stripeAPIKey := os.Getenv(ENV_VAR_STRIPE_API_KEY)
+	if stripeAPIKey == "" {
+		return nil, errors.New(fmt.Sprintf(ERR_ENV_VAR_MISSING, ENV_VAR_STRIPE_API_KEY))
 	}
 	// Optional variables
 	dbPass := os.Getenv(ENV_VAR_DB_PASS)
 
 	return &Environment{
-		dbName:    dbName,
-		dbUser:    dbUser,
-		dbPass:    dbPass,
-		jwtSecret: jwtSecret,
-		port:      port,
+		dbName:       dbName,
+		dbUser:       dbUser,
+		dbPass:       dbPass,
+		jwtSecret:    jwtSecret,
+		port:         port,
+		stripeAPIKey: stripeAPIKey,
 	}, nil
 }

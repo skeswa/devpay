@@ -6,6 +6,20 @@ import (
 	"time"
 )
 
+// The Contribution model represents an amount paid by a user to a Campaign
+type Contribution struct {
+	Id     int64   // The identifier of the contribution
+	Amount float64 // The amount of the contribution
+
+	ContributorId int64 // The id of the contributor; Foreign key for User (belongs to)
+	CampaignId    int64 // The id of the campaign; Foreign key for the Campaign (belongs to)
+
+	Active    bool        // True if this entity has not been soft deleted
+	CreatedAt time.Time   // The time when this contribution was created
+	UpdatedAt time.Time   // The time when this contribution was last updated
+	DeletedAt pq.NullTime // The time when this user was soft deleted
+}
+
 const (
 	TABLE_NAME_CONTRIBUTION = "contributions"
 
@@ -25,20 +39,6 @@ const (
 		);
 	`
 )
-
-// The Contribution model represents an amount paid by a user to a Campaign
-type Contribution struct {
-	Id     int64   // The identifier of the contribution
-	Amount float64 // The amount of the contribution
-
-	ContributorId int64 // The id of the contributor; Foreign key for User (belongs to)
-	CampaignId    int64 // The id of the campaign; Foreign key for the Campaign (belongs to)
-
-	Active    bool        // True if this entity has not been soft deleted
-	CreatedAt time.Time   // The time when this contribution was created
-	UpdatedAt time.Time   // The time when this contribution was last updated
-	DeletedAt pq.NullTime // The time when this user was soft deleted
-}
 
 // Creates the Contribution table if it doesn't already exist
 func CreateContributionTable(db *sql.DB) error {

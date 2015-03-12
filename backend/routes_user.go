@@ -6,6 +6,7 @@ import (
 	"fmt"
 	validator "github.com/asaskevich/govalidator"
 	"github.com/go-martini/martini"
+	// "github.com/stripe/stripe-go"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"strconv"
@@ -78,16 +79,44 @@ func SetupUserRoutes(m *martini.ClassicMartini, db *sql.DB, env *Environment) {
 			return
 		}
 
-		// Get the stripe id
-		// TODO get the stripe API working
-		stripeId := "FAKE_STRIPE_ID"
-
-		// Put the user in the database
-		newId, err := CreateNewUser(db, firstName, lastName, email, string(hashedPassword[:]), stripeId, pictureUrl)
+		// Start the transactoin
+		tx, err := db.Begin()
 		if err != nil {
 			responder.Error(err)
 			return
+		}
+		// Put the user in the database
+		newId, err := CreateNewUser(tx, firstName, lastName, email, string(hashedPassword[:]), "", pictureUrl)
+		if err != nil {
+			_ = tx.Rollback()
+			responder.Error(err)
+			return
 		} else {
+			// Create a new Stripe customer
+			stripeId, err := NewStripeCustomerId(email, newId, firstName, lastName)
+			if err != nil {
+				_ = tx.Rollback()
+				responder.Error(err)
+				return
+			}
+			// Setup update arguments
+			updateArgs := make(map[string]interface{})
+			updateArgs[FIELD_USER_STRIPE_ID] = stripeId
+			// Submit the update
+			err = UpdateUserFields(tx, newId, updateArgs)
+			if err != nil {
+				_ = tx.Rollback()
+				responder.Error(err)
+				return
+			}
+			// Commit the tx
+			err = tx.Commit()
+			if err != nil {
+				_ = tx.Rollback()
+				responder.Error(err)
+				return
+			}
+			// Return the new user
 			newUser, err := GetUser(db, newId)
 			if err != nil {
 				responder.Error(err)
