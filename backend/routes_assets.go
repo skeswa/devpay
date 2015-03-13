@@ -22,7 +22,7 @@ func SetupAssetRoutes(m *martini.ClassicMartini, db *sql.DB, env *Environment) {
 		if strings.Index(req.URL.Path, API_PREFIX) == 0 {
 			responder.Error(PUBERR_ENDPOINT_NOT_FOUND)
 		} else {
-			responder.Page(PATH_404_HTML)
+			responder.PageWithStatus(http.StatusNotFound, PATH_404_HTML)
 		}
 	})
 }

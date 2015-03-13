@@ -28,6 +28,13 @@ func (r *Responder) Page(path string) {
 	http.ServeFile(r.response, r.request, path)
 }
 
+func (r *Responder) PageWithStatus(status int, path string) {
+	// Set content type to json
+	r.response.WriteHeader(status)
+	r.response.Header().Set(ContentType, ContentHTML)
+	http.ServeFile(r.response, r.request, path)
+}
+
 func (r *Responder) Text(text string) {
 	r.response.Write([]byte(text))
 }

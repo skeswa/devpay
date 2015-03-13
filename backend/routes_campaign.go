@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	CAMPAIGN_FIELD_ID                    = "id"
 	CAMPAIGN_FIELD_TITLE                 = "title"
 	CAMPAIGN_FIELD_DESCRIPTION           = "description"
 	CAMPAIGN_FIELD_COVER_PICTURE_URL     = "coverPictureUrl"
@@ -94,6 +95,21 @@ func SetupCampaignRoutes(m *martini.ClassicMartini, db *sql.DB, env *Environment
 			} else {
 				responder.Json(newCampaign)
 				return
+			}
+		}
+	})
+
+	// Gets a info about a specific campaign
+	m.Get(API_GET_CAMPAIGN, func(params martini.Params, responder *Responder) {
+		id, err := strconv.ParseInt(params[CAMPAIGN_FIELD_ID], 10, 64)
+		if err != nil {
+			responder.Error(NewPublicError(http.StatusBadRequest, ERRCODE_INVALID_PARAM, fmt.Sprintf(ERR_URL_PARAM_INVALID, CAMPAIGN_FIELD_ID)))
+		} else {
+			campaign, err := GetFullCampaign(db, id)
+			if err != nil {
+				responder.Error(err)
+			} else {
+				responder.Json(campaign)
 			}
 		}
 	})

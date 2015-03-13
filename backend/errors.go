@@ -11,6 +11,7 @@ const (
 	ERRCODE_ENDPOINT_NOT_FOUND  = "ENDPOINT_NOT_FOUND"
 	ERRCODE_INVALID_JSON        = "INVALID_JSON"
 	ERRCODE_INVALID_FIELD       = "INVALID_FIELD"
+	ERRCODE_INVALID_PARAM       = "INVALID_PARAM"
 	ERRCODE_INVALID_AUTH_TOKEN  = "INVALID_AUTH_TOKEN"
 	ERRCODE_INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
 	ERRCODE_ENTITY_NOT_FOUND    = "ENTITY_NOT_FOUND"
@@ -28,6 +29,7 @@ const (
 	ERR_JWT_SESSION_EXPIRED      = "Session has expired"              // Error occurs when the session has expired
 	ERR_BODY_INVALID_JSON        = "Body was invalid JSON"
 	ERR_BODY_FIELD_INVALID       = "The \"%s\" field is invalid or ill-formatted"
+	ERR_URL_PARAM_INVALID        = "The \"%s\" URL parameter is invalid or ill-formatted"
 	ERR_COULD_NOT_HASH_PASS      = "Failed to hash the password field"
 	ERR_COULD_CREATE_USER        = "Failed to create a new user"
 	ERR_ENTITY_NOT_FOUND         = "Could not find entity matching provided information"
